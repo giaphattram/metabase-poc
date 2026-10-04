@@ -21,7 +21,7 @@ Open Metabot with Cmd+E (Ctrl+E on Windows), or use **+ New > AI exploration**. 
 
 ## Compare with and without context
 
-The metadata is stored in [metadata/descriptions.json](metadata/descriptions.json). Metabase is not aware of this file at all. When creating the stack from docker-compose, there is a step that runs `./scripts/enrich-metadata.sh apply` to use Metabase API to write metadata from this json files to Metabase.
+The metadata is stored in [metadata/descriptions.json](metadata/descriptions.json). Metabase is not aware of this file at all. When creating the stack from docker-compose, there is a step that runs `./scripts/enrich-metadata.sh apply` to use Metabase API to write metadata from this json files to Metabase. The metadata can be viewed at http://localhost:3000/reference
 
 To remove this metadata from Metabase, we can run `./scripts/enrich-metadata.sh reset`. When we to write the metadata to Metabase again, we can run `./scripts/enrich-metadata.sh apply`. This will allow us to see the quality of the AI Assistance with and without the metadata.
 
