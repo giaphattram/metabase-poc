@@ -1,0 +1,82 @@
+{
+  "tables": {
+    "fact_saleorder": {
+      "description": "One row per customer order or cart (grain: order_id). Orders are keyed '{market}-{number}'. Includes carts and canceled orders, so filter order_state = 'complete' for real sales. Money columns are in the market's local currency.",
+      "fields": {
+        "order_id": {"description": "Unique order identifier in the form '{market}-{number}', e.g. 'AU-100123'.", "semantic_type": "type/PK"},
+        "market": {"description": "Country market the order was placed in: AU (Australia), SG (Singapore), US, UK, CA (Canada)."},
+        "customer_id": {"description": "The customer who placed the order. Links to dim_customer."},
+        "order_state": {"description": "Lifecycle state: 'complete' (a real, paid order), 'canceled', or 'cart' (not yet purchased). Exclude 'cart' and 'canceled' for sales reporting."},
+        "payment_status": {"description": "Payment state: 'paid', 'pending', or 'voided'. 'paid' matches order_state = 'complete'."},
+        "created_at": {"description": "When the order or cart was created. Use this for order-date analysis (monthly, weekly trends)."},
+        "payment_completion_time": {"description": "When payment completed. NULL for carts and canceled orders."},
+        "o2o_flag": {"description": "'Y' if this was an online-to-offline order (placed online, handled via a showroom). 'N' otherwise. CA has no offline store, so it is always 'N'."},
+        "goods_amount": {"description": "Value of the goods after line-level discounts, before shipping and tax.", "semantic_type": "type/Currency"},
+        "promo_amount": {"description": "Total promotional discount applied to the order across all lines.", "semantic_type": "type/Currency"},
+        "shipping_amount": {"description": "Shipping fee charged. Zero for carts and for orders with goods_amount over 1500.", "semantic_type": "type/Currency"},
+        "tax_amount": {"description": "Tax charged (GST/VAT/sales tax depending on market). Zero for carts.", "semantic_type": "type/Currency"},
+        "order_amount": {"description": "Total the customer pays: goods_amount + shipping_amount + tax_amount.", "semantic_type": "type/Currency"},
+        "reporting_sales": {"description": "Sales figure used for reporting: goods_amount + shipping_amount (excludes tax). Use this, not order_amount, for revenue.", "semantic_type": "type/Currency"}
+      }
+    },
+    "fact_saleorderline": {
+      "description": "One row per product line within an order (grain: line_id). Join to fact_saleorder on order_id and to dim_product on product_id. Gift-with-purchase lines are included and flagged with is_gwp.",
+      "fields": {
+        "line_id": {"description": "Unique line identifier.", "semantic_type": "type/PK"},
+        "order_id": {"description": "The order this line belongs to."},
+        "product_id": {"description": "The product sold. Links to dim_product."},
+        "quantity": {"description": "Units of the product on this line."},
+        "list_price": {"description": "Undiscounted price of ONE unit at the time of sale.", "semantic_type": "type/Currency"},
+        "promo_amount": {"description": "Discount applied to this whole line (quantity x list_price x discount rate).", "semantic_type": "type/Currency"},
+        "discounted_amount": {"description": "Line value AFTER discount: quantity x list_price - promo_amount. This is the line's sales value; it is NOT the discount.", "semantic_type": "type/Currency"},
+        "is_gwp": {"description": "True for gift-with-purchase lines: a free item added by a promotion. Exclude when counting items the customer bought."},
+        "foc_flag": {"description": "'Y' if the line was free of charge (discounted_amount = 0), 'N' otherwise."}
+      }
+    },
+    "fact_saleorder_shipment": {
+      "description": "One row per shipment of a completed order (grain: shipment_id). Carts and canceled orders have no shipment. Join to fact_saleorder on order_id.",
+      "fields": {
+        "shipment_id": {"description": "Unique shipment identifier.", "semantic_type": "type/PK"},
+        "order_id": {"description": "The order this shipment fulfils."},
+        "state": {"description": "Fulfilment state: 'ready' (not yet shipped), 'shipped', or 'delivered'."},
+        "service_type": {"description": "Delivery service: 'Standard' (kerbside), 'Room of Choice', or 'White Glove' (assembly and packaging removal)."},
+        "shipment_fee": {"description": "Shipping fee for this shipment.", "semantic_type": "type/Currency"},
+        "shipped_at": {"description": "When the shipment left the warehouse. NULL while state = 'ready'."},
+        "delivered_at": {"description": "When the shipment was delivered. NULL unless state = 'delivered'. Delivery lead time = delivered_at - shipped_at."}
+      }
+    },
+    "dim_customer": {
+      "description": "One row per customer (grain: customer_id). Join from fact_saleorder.customer_id.",
+      "fields": {
+        "customer_id": {"description": "Unique customer identifier.", "semantic_type": "type/PK"},
+        "market": {"description": "The customer's home market: AU, SG, US, UK, or CA."},
+        "customer_type": {"description": "'B2C' for consumers, 'B2B' for business or trade customers."},
+        "acquisition_channel": {"description": "How the customer was first acquired: organic, paid_search, social, referral, email, or showroom."},
+        "first_seen_date": {"description": "Date the customer first appeared.", "semantic_type": "type/JoinDate"}
+      }
+    },
+    "dim_product": {
+      "description": "One row per product (grain: product_id). Join from fact_saleorderline.product_id. Hierarchy: category > subcategory > product.",
+      "fields": {
+        "product_id": {"description": "Unique product identifier.", "semantic_type": "type/PK"},
+        "sku": {"description": "Stock keeping unit code, e.g. 'SOF-MEL-3S'."},
+        "product_name": {"description": "Customer-facing product name."},
+        "category": {"description": "Top-level furniture category: Living, Bedroom, Dining, Storage, Outdoor, or Decor."},
+        "subcategory": {"description": "Finer product grouping within a category, e.g. Sofas, Beds, Dining Tables."},
+        "collection": {"description": "Design collection the product belongs to, e.g. Mellow, Aria, Nova."},
+        "list_price": {"description": "Current undiscounted list price of one unit.", "semantic_type": "type/Currency"}
+      }
+    }
+  },
+  "glossary": [
+    {"term": "Sales", "definition": "Revenue measured by reporting_sales on fact_saleorder (goods plus shipping, excluding tax), counting only orders with order_state = 'complete'."},
+    {"term": "AOV", "definition": "Average order value: average reporting_sales across complete orders."},
+    {"term": "Cart", "definition": "An order with order_state = 'cart': created but not purchased. Carts carry no shipping or tax and are not sales."},
+    {"term": "GWP", "definition": "Gift with purchase: a free item added by a promotion. Lines flagged is_gwp = true in fact_saleorderline."},
+    {"term": "FOC", "definition": "Free of charge. A line with foc_flag = 'Y' (discounted_amount = 0)."},
+    {"term": "O2O", "definition": "Online-to-offline: an order placed online but handled through a showroom (o2o_flag = 'Y')."},
+    {"term": "B2B", "definition": "Business or trade customer (customer_type = 'B2B'). Everything else is B2C."},
+    {"term": "White Glove", "definition": "Premium delivery service including assembly and packaging removal (service_type = 'White Glove')."},
+    {"term": "Delivery lead time", "definition": "Days between shipped_at and delivered_at on fact_saleorder_shipment, for delivered shipments."}
+  ]
+}

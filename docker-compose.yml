@@ -1,0 +1,103 @@
+name: metabase-poc
+
+services:
+  metabase:
+    image: metabase/metabase:${METABASE_TAG:-latest}
+    ports:
+      - "127.0.0.1:3000:3000"
+    # LLM provider keys (MB_LLM_*) live in the untracked .env; Metabot stays unconnected without them.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: metabase-db
+      MB_DB_PORT: 5432
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: metabase
+      MB_DB_PASS: metabase
+      MB_ANON_TRACKING_ENABLED: "false"
+      # No Sample Database: Metabot builds its starter prompts from sample models/metrics and would suggest unrelated questions.
+      MB_LOAD_SAMPLE_CONTENT: "false"
+    depends_on:
+      metabase-db:
+        condition: service_healthy
+      analytics-db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail -s http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+
+  # One-shot: create admin, connect the demo DB, apply metadata, set starter prompts. Enrichment is skipped once a baseline exists.
+  setup:
+    image: alpine:3.20
+    depends_on:
+      metabase:
+        condition: service_healthy
+    environment:
+      MB_URL: http://metabase:3000
+      POC_ADMIN_EMAIL: ${POC_ADMIN_EMAIL:-admin@poc.local}
+      POC_ADMIN_PASSWORD: ${POC_ADMIN_PASSWORD:-Metabot-poc-1}
+      # Metabase's own database, used to write the starter prompts (the API cannot add them).
+      PGHOST: metabase-db
+      PGUSER: metabase
+      PGPASSWORD: metabase
+      PGDATABASE: metabase
+    volumes:
+      - ./scripts:/work/scripts:ro
+      - ./questions:/work/questions:ro
+      - ./metadata:/work/metadata
+    working_dir: /work
+    # Idles after finishing so `up --wait` blocks until setup is done (healthy) or fails (exited non-zero).
+    command: >
+      sh -c "apk add --no-cache -q bash curl jq postgresql16-client
+      && bash scripts/bootstrap.sh
+      && { [ -f metadata/.baseline.json ] || bash scripts/enrich-metadata.sh apply; }
+      && bash scripts/seed-prompts.sh
+      && touch /tmp/setup-done && tail -f /dev/null"
+    healthcheck:
+      test: test -f /tmp/setup-done
+      interval: 3s
+      retries: 300
+    restart: "no"
+
+  # Metabase's own application database (users, saved questions, settings, Metabot conversations).
+  metabase-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: metabase
+      POSTGRES_PASSWORD: metabase
+      POSTGRES_DB: metabase
+    volumes:
+      - metabase_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U metabase -d metabase
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Demo analytics warehouse that Metabot queries; swap for your own Postgres later.
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: analytics_admin
+      POSTGRES_PASSWORD: analytics_admin
+      POSTGRES_DB: analytics
+    ports:
+      - "127.0.0.1:5437:5432"
+    volumes:
+      - analytics_db_data:/var/lib/postgresql/data
+      - ./analytics-db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: pg_isready -U analytics_admin -d analytics
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  metabase_db_data:
+  analytics_db_data:

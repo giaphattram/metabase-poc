@@ -1,0 +1,289 @@
+[
+  {
+    "table": "dim_customer",
+    "table_id": 1,
+    "table_description": null,
+    "fields": [
+      {
+        "name": "customer_id",
+        "id": 1,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "market",
+        "id": 2,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "customer_type",
+        "id": 3,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "acquisition_channel",
+        "id": 4,
+        "description": null,
+        "semantic_type": "type/Source"
+      },
+      {
+        "name": "first_seen_date",
+        "id": 5,
+        "description": null,
+        "semantic_type": null
+      }
+    ]
+  },
+  {
+    "table": "dim_product",
+    "table_id": 2,
+    "table_description": null,
+    "fields": [
+      {
+        "name": "product_id",
+        "id": 6,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "sku",
+        "id": 7,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "product_name",
+        "id": 8,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "category",
+        "id": 9,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "subcategory",
+        "id": 10,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "collection",
+        "id": 11,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "list_price",
+        "id": 12,
+        "description": null,
+        "semantic_type": null
+      }
+    ]
+  },
+  {
+    "table": "fact_saleorder",
+    "table_id": 3,
+    "table_description": null,
+    "fields": [
+      {
+        "name": "order_id",
+        "id": 13,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "market",
+        "id": 14,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "customer_id",
+        "id": 15,
+        "description": null,
+        "semantic_type": "type/FK"
+      },
+      {
+        "name": "order_state",
+        "id": 16,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "payment_status",
+        "id": 17,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "created_at",
+        "id": 18,
+        "description": null,
+        "semantic_type": "type/CreationTimestamp"
+      },
+      {
+        "name": "payment_completion_time",
+        "id": 19,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "o2o_flag",
+        "id": 20,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "goods_amount",
+        "id": 21,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "promo_amount",
+        "id": 22,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "shipping_amount",
+        "id": 23,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "tax_amount",
+        "id": 24,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "order_amount",
+        "id": 25,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "reporting_sales",
+        "id": 26,
+        "description": null,
+        "semantic_type": null
+      }
+    ]
+  },
+  {
+    "table": "fact_saleorder_shipment",
+    "table_id": 4,
+    "table_description": null,
+    "fields": [
+      {
+        "name": "shipment_id",
+        "id": 27,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "order_id",
+        "id": 28,
+        "description": null,
+        "semantic_type": "type/FK"
+      },
+      {
+        "name": "state",
+        "id": 29,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "service_type",
+        "id": 30,
+        "description": null,
+        "semantic_type": "type/Category"
+      },
+      {
+        "name": "shipment_fee",
+        "id": 31,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "shipped_at",
+        "id": 32,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "delivered_at",
+        "id": 33,
+        "description": null,
+        "semantic_type": null
+      }
+    ]
+  },
+  {
+    "table": "fact_saleorderline",
+    "table_id": 5,
+    "table_description": null,
+    "fields": [
+      {
+        "name": "line_id",
+        "id": 34,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "order_id",
+        "id": 35,
+        "description": null,
+        "semantic_type": "type/FK"
+      },
+      {
+        "name": "product_id",
+        "id": 36,
+        "description": null,
+        "semantic_type": "type/FK"
+      },
+      {
+        "name": "quantity",
+        "id": 37,
+        "description": null,
+        "semantic_type": "type/Quantity"
+      },
+      {
+        "name": "list_price",
+        "id": 38,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "promo_amount",
+        "id": 39,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "discounted_amount",
+        "id": 40,
+        "description": null,
+        "semantic_type": "type/Discount"
+      },
+      {
+        "name": "is_gwp",
+        "id": 41,
+        "description": null,
+        "semantic_type": null
+      },
+      {
+        "name": "foc_flag",
+        "id": 42,
+        "description": null,
+        "semantic_type": "type/Category"
+      }
+    ]
+  }
+]
